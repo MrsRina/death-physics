@@ -39,7 +39,9 @@ pub mod gpu {
     pub fn init_physical_device() {
         let vk_instance = VK_INSTANCE.get().unwrap();
         let physical_devices = unsafe { vk_instance.enumerate_physical_devices(None) }.unwrap();
+        
         let device_count = physical_devices.len() as u32;
+        let mut first_device_reach: bool = false;
 
         println!("Number of physical devices: {}", device_count);
         for physical_device in physical_devices {
@@ -48,11 +50,14 @@ pub mod gpu {
                 .take_while(|&&it| it != 0x00i8)
                 .map(|&it| it as u8 as char)
                 .collect();
+        
+            if first_device_reach {
+                VK_PHYSICAL_DEVICE.get_or_init(|| physical_device);
+            }
 
-            println!("Device name: {}", device_name);
+            println!("Device name: {} -> Choosed {}", device_name, !first_device_reach);
+            first_device_reach = true;
         }
-
-        VK_PHYSICAL_DEVICE.get_or_init(|| physical_devices[0]);
     }
 }
 
