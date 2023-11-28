@@ -8,3 +8,4 @@ edition = "2021"
 [dependencies]
 sdl2 = "0.34.5"
 erupt = "0.23.0"
+libloading = "0.8"
