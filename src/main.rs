@@ -1,10 +1,11 @@
 extern crate sdl2;
 
-use erupt::{EntryLoader, InstanceLoader};
+use erupt::{EntryLoader, InstanceLoader, vk};
 use std::sync::OnceLock;
 
 static VK_ENTRY: OnceLock<EntryLoader> = OnceLock::new();
 static VK_INSTANCE: OnceLock<InstanceLoader> = OnceLock::new();
+static VK_PHYSICAL_DEVICE: OnceLock<vk::PhysicalDevice> = OnceLock::new();
 
 pub mod gpu {
     use erupt::{vk, EntryLoader, InstanceLoader};
@@ -12,6 +13,7 @@ pub mod gpu {
 
     use crate::VK_INSTANCE;
     use crate::VK_ENTRY;
+    use crate::VK_PHYSICAL_DEVICE;
 
     pub fn init_instance() {
         let app_name = CString::new("ga").unwrap();
@@ -42,8 +44,15 @@ pub mod gpu {
         println!("Number of physical devices: {}", device_count);
         for physical_device in physical_devices {
             let properties = unsafe { vk_instance.get_physical_device_properties(physical_device) };
-            println!("Device name: {}", String::from_utf8_lossy(properties.device_name as [u8]));
+            let device_name: String = properties.device_name.iter()
+                .take_while(|&&it| it != 0x00i8)
+                .map(|&it| it as u8 as char)
+                .collect();
+
+            println!("Device name: {}", device_name);
         }
+
+        VK_PHYSICAL_DEVICE.get_or_init(|| physical_devices[0]);
     }
 }
 
