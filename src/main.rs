@@ -55,7 +55,7 @@ pub mod gpu {
                 VK_PHYSICAL_DEVICE.get_or_init(|| physical_device);
             }
 
-            println!("Device name: {} -> Choosed {}", device_name, !first_device_reach);
+            println!("Device name: {} -> Chosen {}", device_name, !first_device_reach);
             first_device_reach = true;
         }
     }
