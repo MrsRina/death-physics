@@ -1,7 +1,5 @@
 extern crate sdl2;
 
-#[macro_use]
-
 mod io;
 mod gpu;
 
@@ -31,11 +29,11 @@ fn main() {
     let mut app = Application::new();
     app.init();
 
-    let host : Host = Host::default();
+    let mut host : Host = Host::default();
 
     unsafe {
         gpu::init_instance(sdl_window.vulkan_instance_extensions().unwrap());
-        gpu::init_physical_device(host);
+        gpu::init_physical_device(&mut host);
     }
 
     let mut sdl_event_pump = sdl_context.event_pump().unwrap();

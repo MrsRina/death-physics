@@ -2,6 +2,8 @@ use std::{sync::OnceLock};
 use std::ffi::CString;
 use std::collections::HashSet;
 
+use crate::bitwise;
+
 use erupt::{
     cstr,
     vk, EntryLoader, InstanceLoader
@@ -13,8 +15,8 @@ static VK_PHYSICAL_DEVICE: OnceLock<vk::PhysicalDevice> = OnceLock::new();
 
 #[derive(Default)]
 pub struct Host {
-    graphics_queue: u32,
-    transfer_queue: u32,
+    pub graphics_queue: u32,
+    pub transfer_queue: u32,
 }
 
 const LAYER_KHRONOS_VALIDATION: *const i8 = cstr!("VK_LAYER_KHRONOS_validation");
@@ -32,19 +34,19 @@ pub unsafe fn init_instance(vulkan_instance_extensions: Vec<&'static str>) {
     let mut enabled_layer_names: Vec<*const i8> = Vec::new(); 
     enabled_layer_names.push(LAYER_KHRONOS_VALIDATION);
 
-    for validations in vulkan_instance_extensions {
-        println!("{}", validations);
-    }
+    let mut enabled_layer_names: Vec<*const i8> = enabled_layer_names.iter().map(|&&validations| validations.)
+    enabled_layer_names.push(vk::KHR_SURFACE_EXTENSION_NAME);
 
     let create_info = vk::InstanceCreateInfoBuilder::new()
         .application_info(&app_info)
+        .enabled_extension_names(vulkan_instance_extensions.as_slice())
         .enabled_layer_names(enabled_layer_names.as_slice());
 
     VK_ENTRY.get_or_init(||EntryLoader::new().unwrap());
     VK_INSTANCE.get_or_init(|| InstanceLoader::new(&VK_ENTRY.get().unwrap(), &create_info).expect("Failed to create Vulkan instance loader!"));
 }
 
-pub unsafe fn init_physical_device(mut host: Host) {
+pub unsafe fn init_physical_device(host: &mut Host) {
     let vk_instance = VK_INSTANCE.get().unwrap();
     let physical_devices = vk_instance.enumerate_physical_devices(None).unwrap();
         
@@ -55,7 +57,7 @@ pub unsafe fn init_physical_device(mut host: Host) {
     for physical_device in physical_devices {
         let properties = vk_instance.get_physical_device_properties(physical_device);
         let device_name: String = properties.device_name.iter()
-            .take_while(|&&it| it != 0x00i8)
+            .take_while(|&&cstr| cstr != 0x00i8)
             .map(|&it| it as u8 as char)
             .collect();
         
@@ -73,11 +75,7 @@ pub unsafe fn init_physical_device(mut host: Host) {
     let mut _graphics_found = false;
     let mut _transfer_found = false;
 
-    for queue_properties in device_family_queues {
-        if queue_properties.queue_count == 0 {
-            break;
-        }
-
+    for queue_properties in device_family_queues.iter().take_while(|q_p| q_p.queue_count != 0) {
         if bitwise!(queue_properties.queue_flags, vk::QueueFlags::GRAPHICS) && !_graphics_found {
             println!("Queue GRAPHICS support {}", queue_properties.queue_count);
             host.graphics_queue = queue_properties.queue_count;
@@ -102,11 +100,7 @@ pub unsafe fn init_physical_device(mut host: Host) {
     queues.insert(host.graphics_queue);
 
     let len = queues.len() as f32;
-    let mut index = 0.0f32;
-
-    let mut priority = vec![];
-    priority.reserve(len as usize);
-    priority = priority.iter().map(|&f| len = len + 0.1f32).map(|&f| f).collect();
+    let priority: Vec<f32> = (1..=len as usize).map(|latency| latency as f32 / len).collect();
 
     for queue_indices in queues {
         let device_queue_create_info = vk::DeviceQueueCreateInfoBuilder::new()
