@@ -1,5 +1,9 @@
 extern crate sdl2;
 
+use std::ffi::CString;
+
+pub mod utility;
+
 use crate::gpu::context::Context;
 pub mod gpu;
 
@@ -41,7 +45,7 @@ fn main() {
   let sdl_video_subsystem = sdl.video().unwrap();
   let sdl_window = sdl_video_subsystem.window("Death Physics", 800, 600).vulkan().build().unwrap();
 
-  let vk_context = Context::new("death physics vk", "death physics engine");
+  let vk_context = Context::new(CString::new("death physics vk").unwrap(), CString::new("death physics engine").unwrap());
 
   let mut app = Application {
     window_width: 800, 
