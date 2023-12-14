@@ -97,6 +97,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "deathphysics_x64"
+version = "0.1.0"
+dependencies = [
+ "erupt",
+ "libloading 0.8.1",
+ "sdl2",
+]
+
+[[package]]
 name = "erupt"
 version = "0.23.0+213"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -184,15 +193,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "915b1b472bc21c53464d6c8461c9d3af805ba1ef837e1cac254428f4a77177b1"
 dependencies = [
  "malloc_buf",
-]
-
-[[package]]
-name = "physics_vk"
-version = "0.1.0"
-dependencies = [
- "erupt",
- "libloading 0.8.1",
- "sdl2",
 ]
 
 [[package]]

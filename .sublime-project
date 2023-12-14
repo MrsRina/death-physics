@@ -1,0 +1,17 @@
+{
+    "folders":
+    [
+        
+    ],
+    "settings":
+    {
+        "tab_size": 2
+    },
+    "build_systems":
+    [
+        {
+            "name": "run-build",
+            "shell_cmd": "cd $project && cargo build --release --target-dir=./build && cd ./build/release && deathphysics_x64.exe"
+        }
+    ]
+}
