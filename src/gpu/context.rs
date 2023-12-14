@@ -5,25 +5,20 @@ use erupt::{
 };
 
 use std::ffi::CString;
+use std::sync::OnceLock;
 use crate::vklog;
 
 pub struct Context {
-  instance: InstanceLoader,
-  physical_device: vk::PhysicalDevice,
+  pub vk_entry_loader: EntryLoader,
+  pub instance: InstanceLoader,
+  pub physical_device: vk::PhysicalDevice,
 }
 
 impl Context {
-  pub fn new(app_name: CString, engine_name: CString) -> Context {
-    let instance = Context::create_vk_instance(app_name, engine_name);
-    let physical_device = Context::create_vk_physical_device(&instance);
+  pub fn new(app_name: &'static str, engine_name: &'static str) -> Context {
+    let app_name = CString::new(app_name).unwrap();
+    let engine_name = CString::new(engine_name).unwrap();
 
-    Context {
-      instance: instance,
-      physical_device: physical_device,
-    }
-  }
-
-  pub fn create_vk_instance(app_name: CString, engine_name: CString) -> InstanceLoader {
     let app_info = vk::ApplicationInfoBuilder::new()
       .application_name(&app_name)
       .engine_name(&engine_name)
@@ -37,10 +32,18 @@ impl Context {
       .application_info(&app_info)
       .enabled_layer_names(&enabled_layer_names);
 
-    let entry = EntryLoader::new().unwrap();
+    let vk_entry_loader = EntryLoader::new().unwrap();
 
-    unsafe {
-      InstanceLoader::new(&entry, &instance_create_info).expect("Failed to create Vulkan instance!")
+    let instance = unsafe {
+      InstanceLoader::new(&vk_entry_loader, &instance_create_info).expect("Failed to create Vulkan instance!")
+    };
+
+    let physical_device = Context::create_vk_physical_device(&instance);
+
+    Context {
+      vk_entry_loader: vk_entry_loader,
+      instance: instance,
+      physical_device: physical_device,
     }
   }
 

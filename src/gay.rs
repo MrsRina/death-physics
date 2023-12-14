@@ -32,7 +32,7 @@ pub unsafe fn init_instance(vulkan_instance_extensions: Vec<&'static str>) {
     .engine_name(&engine_name)
     .engine_version(vk::make_api_version(0, 1, 0, 0));
 
-  let mut enabled_layer_names: Vec<*const i8> = Vec::new(); 1
+  let mut enabled_layer_names: Vec<*const i8> = Vec::new();
   enabled_layer_names.push(LAYER_KHRONOS_VALIDATION);
 
   let vk_instance_extensions: Vec<*const i8> = vulkan_instance_extensions.iter()
