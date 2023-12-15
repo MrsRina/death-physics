@@ -41,7 +41,7 @@ impl Context {
             InstanceLoader::new(&vk_entry_loader, &instance_create_info).expect("Failed to create Vulkan instance!")
         };
 
-        let surface = sdl_win.vulkan_create_surface();
+        let surface = sdl_win.vulkan_create_surface(instance as usize);
         let physical_device = Context::get_physical_device(&instance.getins);
         let device = Context::create_vk_device(&instance, physical_device, &surface);
 
