@@ -6,16 +6,19 @@ use erupt::{
 
 use std::ffi::CString;
 use std::sync::OnceLock;
-use crate::vklog;
+use std::collections::HashSet;
+
+use crate::bitwise;
 
 pub struct Context {
     pub vk_entry_loader: EntryLoader,
     pub instance: InstanceLoader,
     pub physical_device: vk::PhysicalDevice,
+    pub surface: vk::SurfaceKHR,
 }
 
 impl Context {
-    pub fn new(app_name: &'static str, engine_name: &'static str) -> Context {
+    pub fn new(app_name: &'static str, engine_name: &'static str, sdl_win : &sdl2::video::Window) -> Context {
         let app_name = CString::new(app_name).unwrap();
         let engine_name = CString::new(engine_name).unwrap();
 
@@ -38,13 +41,15 @@ impl Context {
             InstanceLoader::new(&vk_entry_loader, &instance_create_info).expect("Failed to create Vulkan instance!")
         };
 
-        let physical_device = Context::get_physical_device(&instance);
-        let device = Context::create_vk_device(&instance);
+        let surface = sdl_win.vulkan_create_surface();
+        let physical_device = Context::get_physical_device(&instance.getins);
+        let device = Context::create_vk_device(&instance, physical_device, &surface);
 
         Context {
             vk_entry_loader: vk_entry_loader,
             instance: instance,
             physical_device: physical_device,
+            surface: surface,
         }
     }
 
@@ -60,7 +65,7 @@ impl Context {
                 .map(|&chars| chars as u8 as char)
                 .collect();
 
-            vklog!(device_name);
+            println!("[GPU] {}", device_name);
 
             if first_device {
                 physical_device = gpu_physical_device;
@@ -71,7 +76,59 @@ impl Context {
         physical_device
     }
 
-    pub fn create_vk_device() {
+    pub fn create_vk_device(instance: &InstanceLoader, physical_device: vk::PhysicalDevice, surface: &vk::SurfaceKHR) -> vk::Device {
+        let device_queue_family_properties = unsafe { instance.get_physical_device_queue_family_properties(physical_device, None) };
 
+        let mut graphics_queue_index = 69;
+        let mut transfer_queue_index = 69;
+        let mut presentation_queue_index = 69;
+        let mut queue_counter = 0;
+
+        for property in device_queue_family_properties.iter() {
+            if bitwise!(property.queue_flags, vk::QueueFlags::GRAPHICS) && graphics_queue_index != 69 {
+                graphics_queue_index = queue_counter;
+            }
+
+            if bitwise!(property.queue_flags, vk::QueueFlags::TRANSFER) && queue_counter > 0 {
+                transfer_queue_index = queue_counter;
+            }
+
+            println!("oii queue quantos filhos vc tem? {}", property.queue_count);
+
+            let is_presentation_supported = unsafe { instance.get_physical_device_surface_support_khr(physical_device, queue_counter, *surface).unwrap() };
+            if is_presentation_supported {
+                presentation_queue_index = property.queue_count;
+            }
+
+            queue_counter += 1;
+        }
+
+        println!("[GPU] Found queue family indices: Graphics Transfer Presentation [{}, {}, {}]", graphics_queue_index, transfer_queue_index, presentation_queue_index);
+
+        let mut device_queue_create_info_list = Vec::new();
+    
+        let mut queues: HashSet::<u32> = HashSet::new();
+        queues.insert(graphics_queue_index);
+        queues.insert(transfer_queue_index);
+    
+        let len = queues.len() as f32;
+        let priority: Vec<f32> = (1..=len as usize).map(|latency| latency as f32 / len).collect();
+    
+        for queue_indices in queues {
+            let device_queue_create_info = vk::DeviceQueueCreateInfoBuilder::new()
+                .queue_family_index(queue_indices)
+                .queue_priorities(priority.as_slice());
+
+            device_queue_create_info_list.push(device_queue_create_info);
+        }
+
+        let enabled_extensions: Vec<*const i8> = vec![vk::KHR_SWAPCHAIN_EXTENSION_NAME as *const i8];
+        let device_create_info = vk::DeviceCreateInfoBuilder::new()
+            .queue_create_infos(&device_queue_create_info_list)
+            .enabled_extension_names(&enabled_extensions);
+
+        unsafe {
+            instance.create_device(physical_device, &device_create_info, None).unwrap()
+        }
     }
 }

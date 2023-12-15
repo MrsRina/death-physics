@@ -25,7 +25,7 @@ impl Application {
 
         'running: loop {
             for sdl_event in sdl_event_pump.poll_iter() {
-                match sdl_event {
+            match sdl_event {
                     sdl2::event::Event::Quit { .. } => {
                         break 'running;
                     },
@@ -43,7 +43,7 @@ fn main() {
     let sdl = sdl2::init().unwrap();
     let sdl_video_subsystem = sdl.video().unwrap();
     let sdl_window = sdl_video_subsystem.window("Death Physics", 800, 600).vulkan().build().unwrap();
-    let vk_context : Context = Context::new("Death Physics", "Death Physics Engine");
+    let vk_context : Context = Context::new("Death Physics", "Death Physics Engine", &sdl_window);
 
     let mut app = Application {
         window_width: 800, 
