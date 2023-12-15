@@ -3,7 +3,7 @@
 	[
 		{
 			"name": "run-build",
-			"shell_cmd": "cargo build --release --target-dir=./build && cd ./build/release && deathphysics_x64.exe"
+			"shell_cmd": "cd $folder && cargo build --release --target-dir=./build && cd ./build/release && deathphysics_x64.exe"
 		}
 	],
 	"folders":

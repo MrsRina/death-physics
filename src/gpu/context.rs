@@ -1,18 +1,17 @@
-use erupt::{
+use ash::{
     vk,
-    cstr,
-    EntryLoader, InstanceLoader
+    Entry
 };
 
 use std::ffi::CString;
 use std::sync::OnceLock;
 use std::collections::HashSet;
 
-use crate::bitwise;
+use crate::{bitwise, Application};
 
 pub struct Context {
-    pub vk_entry_loader: EntryLoader,
-    pub instance: InstanceLoader,
+    pub vk_entry: Entry,
+    pub instance: vk::Instance,
     pub physical_device: vk::PhysicalDevice,
     pub surface: vk::SurfaceKHR,
 }
@@ -22,31 +21,31 @@ impl Context {
         let app_name = CString::new(app_name).unwrap();
         let engine_name = CString::new(engine_name).unwrap();
 
-        let app_info = vk::ApplicationInfoBuilder::new()
-            .application_name(&app_name)
-            .engine_name(&engine_name)
-            .engine_version(vk::API_VERSION_1_0)
-            .api_version(vk::API_VERSION_1_0);
-
-        let vk_layer_khronos_validation : *const i8 = cstr!("VK_LAYER_KHRONOS_validation");
-        let enabled_layer_names = vec![vk_layer_khronos_validation];
-
-        let instance_create_info = vk::InstanceCreateInfoBuilder::new()
-            .application_info(&app_info)
-            .enabled_layer_names(&enabled_layer_names);
-
-        let vk_entry_loader = EntryLoader::new().unwrap();
-
-        let instance = unsafe {
-            InstanceLoader::new(&vk_entry_loader, &instance_create_info).expect("Failed to create Vulkan instance!")
+        let app_info = vk::ApplicationInfo {
+            p_application_name: engine_name.as_ptr(),
+            p_engine_name: engine_name.as_ptr(),
+            api_version: vk::make_version(1, 0, 0),
+            engine_version: vk::make_version(1, 1, 0),
         };
 
-        let surface = sdl_win.vulkan_create_surface(instance as usize);
+        let vk_layer_khronos_validation : *const i8 = "VK_LAYER_KHRONOS_validation";
+        let enabled_layer_names = vec![vk_layer_khronos_validation];
+
+        let instance_create_info = vk::InstanceCreateInfo {
+            p_application_info: &app_info,
+            enabled_layer_count: enabled_layer_names.len() as u32,
+            pp_enabled_layer_names: enabled_layer_names.as_slice().as_ptr(),
+        };
+
+        let vk_entry = Entry::load();
+        let instance = unsafe { vk_entry.create_instance(&instance_create_info, None) };
+
+        let surface = sdl_win.vulkan_create_surface(instance);
         let physical_device = Context::get_physical_device(&instance.getins);
         let device = Context::create_vk_device(&instance, physical_device, &surface);
 
         Context {
-            vk_entry_loader: vk_entry_loader,
+            vk_entry: vk_entry,
             instance: instance,
             physical_device: physical_device,
             surface: surface,
